@@ -247,8 +247,10 @@ S_AL_BufferUseDefault
 */
 static void S_AL_BufferUseDefault(sfxHandle_t sfx)
 {
+#ifndef CALLOFDUTY
 	if(sfx == default_sfx)
 		Com_Error(ERR_FATAL, "Can't load default sound effect %s", knownSfx[sfx].filename);
+#endif // CALLOFDUTY
 
 	Com_Printf( S_COLOR_YELLOW "WARNING: Using default sound for %s\n", knownSfx[sfx].filename);
 	knownSfx[sfx].isDefault = qtrue;
@@ -481,7 +483,11 @@ qboolean S_AL_BufferInit( void )
 	numSfx = 0;
 
 	// Load the default sound, and lock it
+#ifndef CALLOFDUTY
 	default_sfx = S_AL_BufferFind("sound/feedback/hit.wav");
+#else
+	default_sfx = S_AL_BufferFind(DEFAULT_SOUND);
+#endif // CALLOFDUTY
 	S_AL_BufferUse(default_sfx);
 	knownSfx[default_sfx].isLocked = qtrue;
 

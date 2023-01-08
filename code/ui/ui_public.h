@@ -23,7 +23,11 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 #ifndef __UI_PUBLIC_H__
 #define __UI_PUBLIC_H__
 
+#ifdef CALLOFDUTY
+#define UI_API_VERSION 	3
+#else
 #define UI_API_VERSION	6
+#endif // CALLOFDUTY
 
 typedef struct {
 	connstate_t		connState;

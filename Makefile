@@ -46,6 +46,11 @@ endif
 ifndef BUILD_AUTOUPDATER  # DON'T build unless you mean to!
   BUILD_AUTOUPDATER=0
 endif
+# Call of Duty START
+ifndef BUILD_CALLOFDUTY
+  BUILD_CALLOFDUTY=0
+endif
+# END Call of Duty
 
 #############################################################################
 #
@@ -1224,6 +1229,12 @@ endif
 ifeq ($(BUILD_STANDALONE),1)
   BASE_CFLAGS += -DSTANDALONE
 endif
+
+# Call of Duty START
+ifeq ($(BUILD_CALLOFDUTY),1)
+  BASE_CFLAGS += -DCALLOFDUTY
+endif
+# END Call of Duty
 
 ifeq ($(GENERATE_DEPENDENCIES),1)
   DEPEND_CFLAGS = -MMD

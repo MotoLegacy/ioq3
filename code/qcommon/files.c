@@ -3600,7 +3600,7 @@ static void FS_CheckPak0( void )
 		}
 	}
 
-
+#ifndef CALLOFDUTY
 	if(!com_standalone->integer && (foundPak & 0x1ff) != 0x1ff)
 	{
 		char errorText[MAX_STRING_CHARS] = "";
@@ -3626,6 +3626,7 @@ static void FS_CheckPak0( void )
 
 		Com_Error(ERR_FATAL, "%s", errorText);
 	}
+#endif // CALLOFDUTY
 
 	if(!com_standalone->integer && foundTA && (foundTA & 0x0f) != 0x0f)
 	{

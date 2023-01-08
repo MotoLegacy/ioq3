@@ -40,6 +40,19 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
   #define CINEMATICS_LOGO		"foologo.roq"
   #define CINEMATICS_INTRO		"intro.roq"
 //  #define LEGACY_PROTOCOL	// You probably don't need this for your standalone game
+#elif CALLOFDUTY
+  #define PRODUCT_NAME				"cod"
+  #define BASEGAME					"Main"
+  #define CLIENT_WINDOW_TITLE 		"Call of Duty"
+  #define CLIENT_WINDOW_MIN_TITLE 	"CoD"
+  #define HOMEPATH_NAME_UNIX 		".cod"
+  #define HOMEPATH_NAME_WIN 		"CoD"
+  #define HOMEPATH_NAME_MACOSX 		HOMEPATH_NAME_WIN
+  #define GAMENAME_FOR_MASTER		"ignoreme"
+  #define CINEMATICS_LOGO 			"atvi.roq"
+  #define CINEMATICS_INTRO 			"iw_logo.roq"
+  #define DEFAULT_SOUND 			"sound/null.wav"
+  #define LEGACY_PROTOCOL 			// Call of Duty FIXME: Investigate networking
 #else
   #define PRODUCT_NAME				"ioq3"
   #define BASEGAME					"baseq3"
