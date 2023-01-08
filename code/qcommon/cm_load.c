@@ -87,6 +87,31 @@ void	CM_FloodAreaConnections (void);
 CMod_LoadShaders
 =================
 */
+void CMod_CoDLoadShaders( codlump_t *l ) {
+	codshader_t	*in, *out;
+	int			i, count;
+
+	in = (void *)(cmod_base + l->fileofs);
+	if (l->filelen % sizeof(*in)) {
+		Com_Error (ERR_DROP, "CMod_CoDLoadShaders: funny lump size");
+	}
+	count = l->filelen / sizeof(*in);
+
+	if (count < 1) {
+		Com_Error (ERR_DROP, "Map with no shaders");
+	}
+	cm.shaders = Hunk_Alloc( count * sizeof( *cm.shaders ), h_high );
+	cm.numShaders = count;
+
+	Com_Memcpy( cm.shaders, in, count * sizeof( *cm.shaders ) );
+
+	out = cm.shaders;
+	for ( i=0 ; i<count ; i++, in++, out++ ) {
+		out->contentFlags = LittleLong( out->contentFlags );
+		out->surfaceFlags = LittleLong( out->surfaceFlags );
+	}
+}
+
 void CMod_LoadShaders( lump_t *l ) {
 	dshader_t	*in, *out;
 	int			i, count;
@@ -230,6 +255,36 @@ CMod_LoadBrushes
 
 =================
 */
+void CMod_CoDLoadBrushes( codlump_t *l ) {
+	codbrush_t	*in;
+	cbrush_t	*out;
+	int			i, count;
+
+	in = (void *)(cmod_base + l->fileofs);
+	if (l->filelen % sizeof(*in)) {
+		Com_Error (ERR_DROP, "MOD_LoadBmodel: funny lump size");
+	}
+	count = l->filelen / sizeof(*in);
+
+	cm.brushes = Hunk_Alloc( ( BOX_BRUSHES + count ) * sizeof( *cm.brushes ), h_high );
+	cm.numBrushes = count;
+
+	// retro-fit them into cbrush
+	out = cm.brushes;
+	for ( i=0 ; i<count ; i++, out++, in++ ) {
+		out->sides = cm.brushsides + 1; // Call of Duty FIXME
+		out->numsides = LittleLong((int)in->numSides);
+
+		out->shaderNum = LittleLong( (int)in->shaderNum );
+		if ( out->shaderNum < 0 || out->shaderNum >= cm.numShaders ) {
+			Com_Error( ERR_DROP, "CMod_LoadBrushes: bad shaderNum: %i", out->shaderNum );
+		}
+		out->contents = cm.shaders[out->shaderNum].contentFlags;
+
+		//CM_BoundBrush( out ); Call of Duty FIXME
+	}
+}
+
 void CMod_LoadBrushes( lump_t *l ) {
 	dbrush_t	*in;
 	cbrush_t	*out;
@@ -309,6 +364,43 @@ void CMod_LoadLeafs (lump_t *l)
 CMod_LoadPlanes
 =================
 */
+void CMod_CoDLoadPlanes (codlump_t *l)
+{
+	int			i, j;
+	cplane_t	*out;
+	codplane_t 	*in;
+	int			count;
+	int			bits;
+	
+	in = (void *)(cmod_base + l->fileofs);
+	if (l->filelen % sizeof(*in))
+		Com_Error (ERR_DROP, "MOD_LoadBmodel: funny lump size");
+	count = l->filelen / sizeof(*in);
+
+	if (count < 1)
+		Com_Error (ERR_DROP, "Map with no planes");
+
+	cm.planes = Hunk_Alloc( ( BOX_PLANES + count ) * sizeof( *cm.planes ), h_high );
+	cm.numPlanes = count;
+
+	out = cm.planes;	
+
+	for ( i=0 ; i<count ; i++, in++, out++)
+	{
+		bits = 0;
+		for (j=0 ; j<3 ; j++)
+		{
+			out->normal[j] = LittleFloat (in->normal[j]);
+			if (out->normal[j] < 0)
+				bits |= 1<<j;
+		}
+
+		out->dist = LittleFloat (in->dist);
+		out->type = PlaneTypeForNormal( out->normal );
+		out->signbits = bits;
+	}
+}
+
 void CMod_LoadPlanes (lump_t *l)
 {
 	int			i, j;
@@ -404,6 +496,36 @@ void CMod_LoadLeafSurfaces( lump_t *l )
 CMod_LoadBrushSides
 =================
 */
+void CMod_CoDLoadBrushSides (codlump_t *l)
+{
+	int				i;
+	cbrushside_t	*out;
+	codbrushside_t 	*in;
+	int				count;
+	int				num;
+
+	in = (void *)(cmod_base + l->fileofs);
+	if ( l->filelen % sizeof(*in) ) {
+		Com_Error (ERR_DROP, "MOD_LoadBmodel: funny lump size");
+	}
+	count = l->filelen / sizeof(*in);
+
+	cm.brushsides = Hunk_Alloc( ( BOX_SIDES + count ) * sizeof( *cm.brushsides ), h_high );
+	cm.numBrushSides = count;
+
+	out = cm.brushsides;	
+
+	for ( i=0 ; i<count ; i++, in++, out++) {
+		num = LittleLong( in->planeNum );
+		out->plane = &cm.planes[num];
+		out->shaderNum = LittleLong( in->shaderNum );
+		if ( out->shaderNum < 0 || out->shaderNum >= cm.numShaders ) {
+			Com_Error( ERR_DROP, "CMod_LoadBrushSides: bad shaderNum: %i", out->shaderNum );
+		}
+		out->surfaceFlags = cm.shaders[out->shaderNum].surfaceFlags;
+	}
+}
+
 void CMod_LoadBrushSides (lump_t *l)
 {
 	int				i;
@@ -440,6 +562,12 @@ void CMod_LoadBrushSides (lump_t *l)
 CMod_LoadEntityString
 =================
 */
+void CMod_CoDLoadEntityString( codlump_t *l ) {
+	cm.entityString = Hunk_Alloc( l->filelen, h_high );
+	cm.numEntityChars = l->filelen;
+	Com_Memcpy (cm.entityString, cmod_base + l->fileofs, l->filelen);
+}
+
 void CMod_LoadEntityString( lump_t *l ) {
 	cm.entityString = Hunk_Alloc( l->filelen, h_high );
 	cm.numEntityChars = l->filelen;
@@ -481,6 +609,61 @@ CMod_LoadPatches
 =================
 */
 #define	MAX_PATCH_VERTS		1024
+void CMod_CoDLoadPatches( codlump_t *surfs, codlump_t *verts ) {
+	coddrawVert_t	*dv, *dv_p;
+	dsurface_t	*in;
+	int			count;
+	int			i, j;
+	int			c;
+	cPatch_t	*patch;
+	vec3_t		points[MAX_PATCH_VERTS];
+	int			width, height;
+	int			shaderNum;
+
+	in = (void *)(cmod_base + surfs->fileofs);
+	if (surfs->filelen % sizeof(*in))
+		Com_Error (ERR_DROP, "MOD_LoadBmodel: funny lump size");
+	cm.numSurfaces = count = surfs->filelen / sizeof(*in);
+	cm.surfaces = Hunk_Alloc( cm.numSurfaces * sizeof( cm.surfaces[0] ), h_high );
+
+	dv = (void *)(cmod_base + verts->fileofs);
+	if (verts->filelen % sizeof(*dv))
+		Com_Error (ERR_DROP, "MOD_LoadBmodel: funny lump size");
+
+	// scan through all the surfaces, but only load patches,
+	// not planar faces
+	for ( i = 0 ; i < count ; i++, in++ ) {
+		if ( LittleLong( in->surfaceType ) != MST_PATCH ) {
+			continue;		// ignore other surfaces
+		}
+		// FIXME: check for non-colliding patches
+
+		cm.surfaces[ i ] = patch = Hunk_Alloc( sizeof( *patch ), h_high );
+
+		// load the full drawverts onto the stack
+		width = LittleLong( in->patchWidth );
+		height = LittleLong( in->patchHeight );
+		c = width * height;
+		if ( c > MAX_PATCH_VERTS ) {
+			Com_Error( ERR_DROP, "ParseMesh: MAX_PATCH_VERTS" );
+		}
+
+		dv_p = dv + LittleLong( in->firstVert );
+		for ( j = 0 ; j < c ; j++, dv_p++ ) {
+			points[j][0] = LittleFloat( dv_p->xyz[0] );
+			points[j][1] = LittleFloat( dv_p->xyz[1] );
+			points[j][2] = LittleFloat( dv_p->xyz[2] );
+		}
+
+		shaderNum = LittleLong( in->shaderNum );
+		patch->contents = cm.shaders[shaderNum].contentFlags;
+		patch->surfaceFlags = cm.shaders[shaderNum].surfaceFlags;
+
+		// create the internal facet structure
+		patch->pc = CM_GeneratePatchCollide( width, height, points );
+	}
+}
+
 void CMod_LoadPatches( lump_t *surfs, lump_t *verts ) {
 	drawVert_t	*dv, *dv_p;
 	dsurface_t	*in;
@@ -561,6 +744,60 @@ unsigned CM_Checksum(dheader_t *header) {
 
 /*
 ==================
+CMod_LoadCoDBSP
+
+Loads in the CoD BSP map
+==================
+*/
+void CMod_LoadCoDBSP( const char *name, qboolean clientload ) {
+	union {
+		int				*i;
+		void			*v;
+	} buf;
+	int 			i;
+	codheader_t		header;
+	int				length;
+
+	//
+	// load the file
+	//
+#ifndef BSPC
+	length = FS_ReadFile( name, &buf.v );
+#else
+	length = LoadQuakeFile((quakefile_t *) name, &buf.v);
+#endif
+
+	header = *(codheader_t *)buf.i;
+	for (i=0 ; i<sizeof(codheader_t)/4 ; i++) {
+		((int *)&header)[i] = LittleLong ( ((int *)&header)[i]);
+	}
+
+	cmod_base = (byte *)buf.i;
+
+	CMod_CoDLoadShaders (&header.lumps[CODLUMP_SHADERS]);
+	CMod_CoDLoadPlanes (&header.lumps[CODLUMP_PLANES]);
+	CMod_CoDLoadBrushSides (&header.lumps[CODLUMP_BRUSHSIDES]);
+	CMod_CoDLoadBrushes (&header.lumps[CODLUMP_BRUSHES]);
+	CMod_CoDLoadPatches( &header.lumps[CODLUMP_LEAFSURFACES], &header.lumps[CODLUMP_DRAWVERTS] );
+	CMod_CoDLoadEntityString (&header.lumps[CODLUMP_ENTITIES]);
+
+	Com_Error(ERR_DROP, "Load Passed.\n");
+
+	// we are NOT freeing the file, because it is cached for the ref
+	FS_FreeFile (buf.v);
+
+	CM_InitBoxHull ();
+
+	CM_FloodAreaConnections ();
+
+	// allow this to be cached if it is loaded by the server
+	if ( !clientload ) {
+		Q_strncpyz( cm.name, name, sizeof( cm.name ) );
+	}
+}
+
+/*
+==================
 CM_LoadMap
 
 Loads in the map and all submodels
@@ -626,9 +863,17 @@ void CM_LoadMap( const char *name, qboolean clientload, int *checksum ) {
 		((int *)&header)[i] = LittleLong ( ((int *)&header)[i]);
 	}
 
-	if ( header.version != BSP_VERSION ) {
-		Com_Error (ERR_DROP, "CM_LoadMap: %s has wrong version number (%i should be %i)"
-		, name, header.version, BSP_VERSION );
+	if ( header.version != BSP_VERSION && header.version != CODBSP_VERSION ) {
+		Com_Error (ERR_DROP, "CM_LoadMap: %s has wrong version number (%i should be %i or %i)"
+		, name, header.version, BSP_VERSION, CODBSP_VERSION );
+	}
+
+	// Call of Duty FIXME: better integrate CODBSP_VERSION map loading..
+	if ( header.version == CODBSP_VERSION ) {
+		FS_FreeFile (buf.v);
+		CMod_LoadCoDBSP(name, clientload);
+		Com_DPrintf("Loading Call of Duty BSP\n");
+		return;
 	}
 
 	cmod_base = (byte *)buf.i;

@@ -314,6 +314,7 @@ typedef struct {
 		// little-endian "IBSP"
 
 #define BSP_VERSION			46
+#define CODBSP_VERSION		59
 
 
 // there shouldn't be any problem with increasing these values at the
@@ -359,6 +360,90 @@ typedef struct {
 
 //=============================================================================
 
+//
+// Call of Duty BSP Spec
+// https://www.pierov.org/2015/08/31/a-note-about-call-of-duty-1uo-bsp-maps/
+// https://wiki.zeroy.com/index.php?title=Call_of_Duty_1:_d3dbsp
+// https://wiki.zeroy.com/index.php?title=Call_of_Duty_2:_d3dbsp
+//
+typedef struct {
+	unsigned int filelen, fileofs;
+} codlump_t;
+
+#define CODLUMP_SHADERS 			0
+#define CODLUMP_LIGHTMAPS			1
+#define CODLUMP_PLANES 				2
+#define CODLUMP_BRUSHSIDES			3
+#define CODLUMP_BRUSHES 			4
+#define CODLUMP_UKNOWN				5
+#define CODLUMP_TRISOUPS			6
+#define CODLUMP_DRAWVERTS			7
+#define CODLUMP_DRAWINDEXES			8
+#define CODLUMP_CULLGROUPS			9
+#define CODLUMP_CULLGROUPINDEXES	10
+#define CODLUMP_PORTALVERTS			11
+#define CODLUMP_OCCLUDERS			12
+#define CODLUMP_OCCLUDERPLANES		13
+#define CODLUMP_OCCLUDEREDGES		14
+#define CODLUMP_OCCLUDERINDEXES		15
+#define CODLUMP_AABBTREES			16
+#define CODLUMP_CELLS				17
+#define CODLUMP_PORTALS 			18
+#define CODLUMP_LIGHTINDEXES		19
+#define CODLUMP_NODES				20
+#define CODLUMP_LEAFS				21
+#define CODLUMP_LEAFBRUSHES			22
+#define CODLUMP_LEAFSURFACES		23
+#define CODLUMP_PATCHCOLLISION		24
+#define CODLUMP_COLLISIONVERTS		25
+#define CODLUMP_COLLISIONINDEXES	26
+#define CODLUMP_MODELS				27
+#define CODLUMP_VISIBILITY			28
+#define CODLUMP_ENTITIES			29
+#define CODLUMP_LIGHTS 				30
+#define CODLUMP_UNKNOWN2 			31
+#define CODLUMP_UNKNOWN3 			32
+#define HEADER_CODLUMPS 			33
+
+typedef struct {
+	int			ident;
+	int			version;
+
+	codlump_t	lumps[HEADER_CODLUMPS];
+} codheader_t;
+
+typedef struct {
+	char		shader[MAX_QPATH];
+	int			surfaceFlags;
+	int			contentFlags;
+} codshader_t;
+
+typedef struct {
+	float		normal[3];
+	float		dist;
+} codplane_t;
+
+typedef struct {
+	int			planeNum;
+	int			shaderNum;
+} codbrushside_t;
+
+typedef struct {
+	unsigned short numSides;
+	unsigned short shaderNum;
+} codbrush_t;
+
+typedef struct {
+	vec3_t		xyz;
+	vec3_t		normal;
+	byte		color[4];
+	float		st[2];
+	float		lightmap[2];
+} coddrawVert_t;
+
+//
+// End Call of Duty BSP
+//
 
 typedef struct {
 	int		fileofs, filelen;
